@@ -94,5 +94,5 @@ void loop()
 
 # More
 
-Find the 'NonBlockingRead" example in the Examples folder, for a more complete implementation of a sequence of non-blocking reads and writes to a Sabertooth motor controller, with feedback on the Serial monitor. This example requires a Leonardo, Pro Micro or another arduino controller with dual serial port coms. 'Serial' is used for Serial monitor communications and 'Serial1' is used for Sabertooth communications.
+Find the 'NonBlockingRead" example in the Examples->Advanced folder, for a more complete implementation of a sequence of non-blocking reads and writes to a Sabertooth motor controller, with feedback on the Serial monitor. This example requires a Leonardo, Pro Micro or another arduino controller with dual serial port coms. 'Serial' is used for Serial monitor communications and 'Serial1' is used for Sabertooth communications.
 
