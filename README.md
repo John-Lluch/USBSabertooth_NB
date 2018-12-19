@@ -58,7 +58,6 @@ void loop()
   
   if ( ST.reply_available( &result, &context ) )
   {
-    bool done = false; 
     if ( result == SABERTOOTH_GET_ERROR || result == SABERTOOTH_GET_TIMED_OUT )
     {
        // process error here, or just skip this step
