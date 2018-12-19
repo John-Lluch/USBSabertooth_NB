@@ -16,11 +16,8 @@ USBSabertooth ST(C, 128); // The USB Sabertooth is on address 128 (unless you've
                           // that here. For how to configure the Sabertooth, see the DIP Switch Wizard at
                           //   http://www.dimensionengineering.com/datasheets/USBSabertoothDIPWizard/start.htm
                           // Be sure to select Packet Serial Mode for use with this library.
-
-
-USBSabertooth ST1(C, 128);                      
+                    
                         
-//unsigned long start=0;
 int battery = 0;
 int motor1 = 0;
 int motor2 = 0;
