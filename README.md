@@ -58,6 +58,16 @@ void loop()
   
   if ( STS.reply_available( &result, &context ) )
   {
+<<<<<<< HEAD
+=======
+    if ( result == SABERTOOTH_GET_ERROR || result == SABERTOOTH_GET_TIMED_OUT )
+    {
+       // process error here, or just skip this step
+       ST.async_getBattery( 1, 0 );  // reset the cycle by starting from the beginning
+    }
+    else 
+    {
+>>>>>>> 6b77c981d925ec385cacefd55d16454b1e21e691
       switch ( context )
       {
          case SABERTOOTH_GET_ERROR:      // Error or timeout
