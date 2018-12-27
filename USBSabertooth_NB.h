@@ -20,7 +20,7 @@ USE OR PERFORMANCE OF THIS SOFTWARE.
 #define USBSabertooth_NB_h   
 
 /*!
-\file USBSabertooth.h
+\file USBSabertooth_NB.h
 Include this file to use the USB Sabertooth Arduino library.
 */
 
@@ -40,9 +40,8 @@ Include this file to use the USB Sabertooth Arduino library.
 #define SABERTOOTH_COMMAND_MAX_BUFFER_LENGTH    10
 #define SABERTOOTH_COMMAND_MAX_DATA_LENGTH      5
 #define SABERTOOTH_GETCOMMAND_DATA_LENGTH       3
-//#define SABERTOOTH_DEFAULT_GET_RETRY_INTERVAL   100
-#define SABERTOOTH_DEFAULT_GET_POLL_INTERVAL    100
-#define SABERTOOTH_DEFAULT_GET_TIMEOUT          SABERTOOTH_INFINITE_TIMEOUT
+#define SABERTOOTH_DEFAULT_GET_POLL_INTERVAL    100   /* default get poll interval set at 100 ms */
+#define SABERTOOTH_DEFAULT_GET_TIMEOUT          3000  /* default get timeout set at 3 seconds */
 #define SABERTOOTH_GET_TIMED_OUT               -32768
 #define SABERTOOTH_GET_ERROR                   -32767
 #define SABERTOOTH_GET_BUSY                    -32766
@@ -80,7 +79,6 @@ class USBSabertoothCommandWriter
 {
 public:
   static size_t writeToBuffer(byte* buffer, byte address, USBSabertoothCommand command, boolean useCRC, const byte* data, size_t lengthOfData);
-  static void   writeToStream(Stream& port, byte address, USBSabertoothCommand command, boolean useCRC, const byte* data, size_t lengthOfData);
 };
 
 class USBSabertoothChecksum
@@ -162,43 +160,30 @@ public:
          void    reset();
   
 private:
-  byte   _data[SABERTOOTH_COMMAND_MAX_BUFFER_LENGTH];
-  size_t _length;
+  byte    _data[SABERTOOTH_COMMAND_MAX_BUFFER_LENGTH];
+  size_t  _length;
   boolean _ready, _usingCRC;
 };
 
-class USBSabertoothReader
-{
-public:
-  USBSabertoothReader();
+struct USBSabertoothRequest
+{ 
+  byte           commandData[SABERTOOTH_GETCOMMAND_DATA_LENGTH];
+  int            context;
+  byte           address;
+  boolean        crc;
+  
+  USBSabertoothRequest() : _pending(false), _timeout(SABERTOOTH_DEFAULT_GET_TIMEOUT) {  _timeout.expire(); }
 
-public:
-  inline byte*     commandData() { return _commandData; }
-
-public:
   inline uint32_t  timeoutMS() const { return _timeout.timeoutMS(); }
   inline void      setTimeoutMS( uint32_t interval ) { _timeout.setTimeoutMS( interval );  }
   inline boolean   expired() const { return _timeout.expired(); }
-         void      expire();
-         void      reset();
-public:
-  inline uint32_t  pollIntervalMS() const { return _poll.timeoutMS(); }
-  inline void      setPollIntervalMS( uint32_t interval ) { _poll.setTimeoutMS( interval );  }
-  inline boolean   pollExpired() const { return _poll.expired(); }
-         void      pollExpire();
-         void      pollReset();
+  inline void      expire() { _timeout.expire(); _pending = false; }
+  inline void      reset() { _timeout.reset(); _pending = true; }
+  inline boolean   pending() const { return _pending; }
 
-public:
-  inline boolean   waiting() const { return _waiting; }
-  inline boolean   isPolling() const { return _poll.canExpire(); }
-  inline void      setContext( int context ) { _context = context; }
-  inline int       context() const { return _context; }
-           
 private:
-  byte                  _commandData[SABERTOOTH_GETCOMMAND_DATA_LENGTH];
-  USBSabertoothTimeout  _timeout, _poll;
-  int                   _context;
-  boolean               _waiting; 
+  USBSabertoothTimeout  _timeout; 
+  boolean               _pending; 
 };
 
 /*!
@@ -225,15 +210,59 @@ public:
   */
   inline Stream& port() const { return _port; }
 
-private:
-  boolean tryReceivePacket();
+  /*!
+  Checks whether a reply from any of the USBSabertooth async_get function calls is available. 
+  Always returns immediatelly, must be called repeadly until it returns true either with a response or an error. 
+  \param type (returned by reference) The type of channel to get from. See get function. Always updated
+  \param number (returned by reference) The number of the channel, 1 or 2. Always updated
+  \param getType (returned by reference) The Get command type. Always updated
+  \param result (returned by reference) The resulting value, SABERTOOTH_GET_ERROR, or SABERTOOTH_GET_TIMED_OUT. 
+        Only updated in case of success, i.e the funcion returning true, undefined otherwise
+  \return true if new data is available or the get command timed out, false otherwhise 
+  */
+  boolean reply_available( byte *type, byte *number, USBSabertoothGetType *getType, int *result, int *context );
+  boolean reply_available( byte *type, byte *number, int *result, int *context );
+  boolean reply_available( byte *number, int *result, int *context );
+  boolean reply_available( int *result, int *context );
   
+  /*!
+  Gets the poll interval.
+  \return The poll interval, in milliseconds.
+  */
+  inline int32_t getPollInterval() const { return _poll.timeoutMS(); }
+  
+  /*!
+  Sets the poll interval.
+  \param timeoutMS The poll interval, in milliseconds.
+  */
+  inline void setPollInterval(int32_t timeoutMS) { _poll.setTimeoutMS(timeoutMS); }
+
+  /*!
+  Gets the get timeout.
+  \return The get timeout, in milliseconds.
+  */
+  inline int32_t getGetTimeout() const { return _request.timeoutMS(); }
+  
+  /*!
+  Sets the get timeout.
+  \param timeoutMS The get timeout, in milliseconds.
+  */
+  inline void setGetTimeout(int32_t timeoutMS) { _request.setTimeoutMS(timeoutMS); }
+
+private:
+  void    write    (byte address, USBSabertoothCommand command, boolean useCRC, const byte* data, size_t lengthOfData);
+  int     get      (byte address, boolean useCrc, byte type, byte number, USBSabertoothGetType getType, boolean unescaled);
+  boolean async_get(byte address, boolean useCrc, byte type, byte number, USBSabertoothGetType getType, int context, boolean unescaled);
+  boolean tryReceivePacket();
+
 private:
   USBSabertoothSerial(USBSabertoothSerial& serial); // no copy
   void operator =    (USBSabertoothSerial& serial);
 
 private:
   USBSabertoothReplyReceiver _receiver;
+  USBSabertoothRequest       _request;
+  USBSabertoothTimeout       _poll;
   Stream&                    _port;
 };
 
@@ -264,7 +293,7 @@ public:
   \param command The number of the command.
   \param value   The command's value.
   */
-  void command(byte command, byte value);
+  void command(USBSabertoothCommand cmd, byte value);
   
   /*!
   Sends a multibyte packet serial command to the motor driver.
@@ -272,7 +301,7 @@ public:
   \param value   The command's value.
   \param bytes   The number of bytes in the value.
   */
-  void command(byte command, const byte* value, size_t bytes);
+  void command(USBSabertoothCommand cmd, const byte* value, size_t bytes);
   
 public:
   /*!
@@ -462,49 +491,31 @@ public:
     return get('M', motorOutputNumber, SABERTOOTH_GET_TEMPERATURE, unscaled);
   }
 
-
-/*!
-  Asynchronous, non blocking, get functions.
+  /*!
+  Asynchronous, non blocking, get functions. After calling one of these, use one of the 'reply_available'
+  methods of the USBSabertoothSerial to get the response.
+  \param type    See get method.
+  \param number  See get method.
+  \param context Any arbitrary number. It will be returned by 'reply_available' upon reception of the response
   \return true if the get command was sent, false if still waiting response from the previous call. 
         These functions will always return immediatelly
-*/
+  */
 
-  inline boolean async_get(byte type, byte number, int context=0)
-  {
+  inline boolean async_get(byte type, byte number, int context=0) {
     return async_get(type, number, SABERTOOTH_GET_VALUE, context, false);
   }
 
-  inline boolean async_getBattery(byte motorOutputNumber, int context=0, boolean unscaled = false)
-  {
+  inline boolean async_getBattery(byte motorOutputNumber, int context=0, boolean unscaled = false) {
     return async_get('M', motorOutputNumber, SABERTOOTH_GET_BATTERY, context, unscaled);
   }
   
-  inline boolean async_getCurrent(byte motorOutputNumber, int context=0, boolean unscaled = false)
-  {
+  inline boolean async_getCurrent(byte motorOutputNumber, int context=0, boolean unscaled = false) {
     return async_get('M', motorOutputNumber, SABERTOOTH_GET_CURRENT, context, unscaled);
   }
   
-  inline boolean async_getTemperature(byte motorOutputNumber, int context=0, boolean unscaled=false )
-  {
+  inline boolean async_getTemperature(byte motorOutputNumber, int context=0, boolean unscaled=false ) {
     return async_get('M', motorOutputNumber, SABERTOOTH_GET_TEMPERATURE, context, unscaled);
   }
-
-  /*!
-  Checks whether a reply from one of the async_get function calls is available. 
-  Always returns immediatelly, must be called repeadly until it returns true either with a response or an error. 
-  \param type (returned by reference) The type of channel to get from. See get function. Always updated
-  \param number (returned by reference) The number of the channel, 1 or 2. Always updated
-  \param getType (returned by reference) The Get command type. Always updated
-  \param result (returned by reference) The resulting value, SABERTOOTH_GET_ERROR, or SABERTOOTH_GET_TIMED_OUT. 
-        Only updated in case of success, i.e the funcion returning true, undefined otherwise
-  \return true if new data is available or the get command timed out, false otherwhise 
-  */
-  boolean reply_available( byte *type, byte *number, USBSabertoothGetType *getType, int *result, int *context );
-  boolean reply_available( byte *type, byte *number, int *result, int *context );
-  boolean reply_available( byte *number, int *result, int *context );
-  boolean reply_available( int *result, int *context );
-
-  
   
 public:
   /*! Gets the get retry interval.
@@ -518,30 +529,17 @@ public:
   */
   //inline void setGetRetryInterval(int32_t intervalMS) { _getRetryInterval = intervalMS; }
 
-
   /*!
-  Gets the poll interval.
-  \return The poll interval, in milliseconds.
-  */
-  inline int32_t getPollInterval() const { return _reader.pollIntervalMS(); }
-  
-  /*!
-  Sets the poll interval.
-  \param timeoutMS The poll interval, in milliseconds.
-  */
-  inline void setPollInterval(int32_t timeoutMS) { _reader.setPollIntervalMS(timeoutMS); }
-
-  /*!
-  Gets the get timeout.
+  Gets the get timeout. DEPRECATED, use the USBSabertoothSerial functions instead
   \return The get timeout, in milliseconds.
   */
-  inline int32_t getGetTimeout() const { return _reader.timeoutMS(); }
+  inline int32_t getGetTimeout() const { return _serial._request.timeoutMS(); }
   
   /*!
-  Sets the get timeout.
+  Sets the get timeout. DEPRECATED, use the USBSabertoothSerial functions instead
   \param timeoutMS The get timeout, in milliseconds.
   */
-  inline void setGetTimeout(int32_t timeoutMS) { _reader.setTimeoutMS(timeoutMS); }
+  inline void setGetTimeout(int32_t timeoutMS) { _serial._request.setTimeoutMS(timeoutMS); }
 
   /*!
   Gets whether CRC-protected commands are used. They are, by default.
@@ -561,22 +559,18 @@ public:
   
 private:
   int get(byte type, byte number,
-          USBSabertoothGetType getType, boolean raw);
+          USBSabertoothGetType getType, boolean unscaled);
   
   boolean async_get(byte type, byte number,
-          USBSabertoothGetType getType, int context, boolean raw);
+          USBSabertoothGetType getType, int context, boolean unscaled);
           
   void set(byte type, byte number, int value,
             USBSabertoothSetType setType);
-    
-private:
-  void init();
   
 private:
   const byte           _address;
   boolean              _crc;
   USBSabertoothSerial& _serial;
-  USBSabertoothReader  _reader;
 };
 
 #endif

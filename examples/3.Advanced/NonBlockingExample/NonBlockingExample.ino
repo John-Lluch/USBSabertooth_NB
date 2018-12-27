@@ -4,7 +4,7 @@
 // Loop time is below 1 ms on a 16 MHz Leonardo or Pro Micro 
 // This example assumes a board with Serial and Serial1 interfaces (only required for display purposes)
 
-#include "USBSabertooth_NB.h"
+#include <USBSabertooth_NB.h>
 
 USBSabertoothSerial C; // Use the Arduino TX pin. It connects to S1.
                        // See the SoftwareSerial example in 3.Advanced for how to use other pins.
@@ -16,8 +16,12 @@ USBSabertooth ST(C, 128); // The USB Sabertooth is on address 128 (unless you've
                           // that here. For how to configure the Sabertooth, see the DIP Switch Wizard at
                           //   http://www.dimensionengineering.com/datasheets/USBSabertoothDIPWizard/start.htm
                           // Be sure to select Packet Serial Mode for use with this library.
-                    
+
+// Uncomment the following line and replace the code in loop() acordingly 
+// to communicate with another USB Sabertooth device
+// USBSabertooth ST1(C, 129);                
                         
+//unsigned long start=0;
 int battery = 0;
 int motor1 = 0;
 int motor2 = 0;
@@ -36,7 +40,7 @@ void setup()
                                      //   http://www.dimensionengineering.com/describe
 
    // start reading from sabertooth
-   bool done = ST.async_getBattery( 1, 0 );  // request battery voltage with context 0
+   ST.async_getBattery( 1, 0 );  // request battery voltage with context 0
 
    Serial.println( "Serial TEST" );
 }
@@ -46,85 +50,78 @@ void loop()
   int result = 0;
   int context = 0;
   
-  if ( ST.reply_available( &result, &context ) )
+  if ( C.reply_available( &result, &context ) )
   {
-    bool done = false; 
-    if ( result == SABERTOOTH_GET_ERROR || result == SABERTOOTH_GET_TIMED_OUT )
+    switch ( context )
     {
-       Serial.print( "ERROR " );
-       Serial.print( millis() );
-       Serial.print( " *** ");
-       Serial.println( result );
-       done = ST.async_getBattery( 1, 0 );  // try again from the beginning
-    }
-    else 
-    {
-      switch ( context )
-      {
-        case 0:  // get Battery  
-           battery = result;
-           ST.async_get( 'M', 1, 1 );   // request motor 1 value voltage with context 1
-           break;
+      case SABERTOOTH_GET_ERROR:
+      case SABERTOOTH_GET_TIMED_OUT:
+         ST.async_getBattery( 1, 0 );  // try again from the beginning
+         break;
            
-        case 1: // get value
-           motor1 = result;
-           done = ST.async_get( 'M', 2, 2 );  // request motor 2 value voltage with context 2
-           break;
-
-        case 2: // get value
-           motor2 = result;
-           done = ST.async_getCurrent( 1, 3 );  // request motor 1 current with context 3
-           break;
+      case 0:  // get Battery  
+         battery = result;
+         ST.async_get( 'M', 1, 1 );   // request motor 1 value voltage with context 1
+         break;
            
-        case 3: // get current
-           current1 = result;
-           done = ST.async_getCurrent( 2, 4 );  // request motor 2 current with context 4
-           break;
+      case 1: // get value
+         motor1 = result;
+         ST.async_get( 'M', 2, 2 );  // request motor 2 value voltage with context 2
+         break;
 
-        case 4: // get current
-           current2 = result;
-           done = ST.async_getTemperature( 1, 5 );  // request temperature 1 with context 5
-           break;
-
-        case 5: // get temperature
-           temperature1 = result;
-           done = ST.async_getTemperature( 2, 6 );  // request temperature 2 voltage with context 6
-           break;
+      case 2: // get value
+         motor2 = result;
+         ST.async_getCurrent( 1, 3 );  // request motor 1 current with context 3
+         break;
            
-        case 6: // get temperature
-           temperature2 = result;
-           done = ST.async_getBattery( 1, 0 );  // request battery voltage with context 0
-           break; 
-      } 
+      case 3: // get current
+         current1 = result;
+         ST.async_getCurrent( 2, 4 );  // request motor 2 current with context 4
+         break;
+
+      case 4: // get current
+         current2 = result;
+         ST.async_getTemperature( 1, 5 );  // request temperature 1 with context 5
+         break;
+
+      case 5: // get temperature
+         temperature1 = result;
+         ST.async_getTemperature( 2, 6 );  // request temperature 2 voltage with context 6
+         break;
+           
+      case 6: // get temperature
+         temperature2 = result;
+         ST.async_getBattery( 1, 0 );  // request battery voltage with context 0
+         break;  
     }
   }
 
-// the following code sets an arbitraries values to motor 1 and 2 every second
+// the following code sets arbitrary values to motor 1 and 2 every second
 
-    unsigned long current = millis();
-    static long start = 0;
-    static byte motor = 1;
-    static bool state = 0;
-    static bool dir = 0;
-    if ( current-start > 1000 )
+  unsigned long current = millis();
+  static long start = 0;
+  static byte motor = 1;
+  static bool state = 0;
+  static bool dir = 0;
+  if ( current-start > 1000 )
+  {
+    start = current;
+
+    state = !state;
+    if ( state ) dir = !dir;
+    if ( state && dir ) motor = (motor==1?2:1);
+
+    if ( state )
     {
-        start = current;
-        
-        state = !state;
-        if ( state ) dir = !dir;
-        if ( state && dir ) motor = (motor==1?2:1);
-
-        if ( state )
-        {
-          ST.freewheel(motor, false); // Turn off freewheeling.
-          ST.motor(motor, dir?1000:-1000);
-        }
-        else
-        {
-          ST.freewheel(motor, true); // Turn off freewheeling.
-          ST.motor(motor, 0);
-        }
+      ST.freewheel(motor, false); // Turn off freewheeling.
+      ST.motor(motor, dir?1000:-1000);
     }
+    else
+    {
+      ST.freewheel(motor, true); // Turn off freewheeling.
+      ST.motor(motor, 0);
+    }
+  }
 
 // the following code is just for display purposes, only values that changed are displayed
 
@@ -185,7 +182,7 @@ void loop()
   }
 
  // uncomment the following code to verify that the entire loop is executed in less than 1 millisecond, 
- // the delay of 1 ms is only added to help the console to catch up with the loop speed!
+ // the additional delay of 1 ms is only added to help the console to catch up with the loop speed!
  
 /*
   Serial.print( "loop speed test, milliseconds: " );

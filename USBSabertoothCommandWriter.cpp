@@ -51,11 +51,16 @@ size_t USBSabertoothCommandWriter::writeToBuffer(byte* buffer, byte address,
   return i;
 }
 
+
+/*
 void USBSabertoothCommandWriter::writeToStream(Stream& port, byte address,
                                                USBSabertoothCommand command, boolean useCRC,
                                                const byte* data, size_t lengthOfData)
+
 {
   byte buffer[SABERTOOTH_COMMAND_MAX_BUFFER_LENGTH];
   size_t lengthOfBuffer = writeToBuffer(buffer, address, command, useCRC, data, lengthOfData);
   port.write(buffer, lengthOfBuffer);
 }
+
+*/
