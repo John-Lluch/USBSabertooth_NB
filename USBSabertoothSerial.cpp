@@ -25,6 +25,13 @@ USBSabertoothSerial::USBSabertoothSerial(Stream& port)
   _poll.expire();
 }
 
+
+void USBSabertoothSerial::clearSerial()
+{
+  while( !( _port.read() < 0) );
+}
+
+
 boolean USBSabertoothSerial::tryReceivePacket()
 {  
   while ( !_receiver.ready() )    // do not attempt to read any further bytes unless the reveiver is reset
@@ -203,7 +210,11 @@ boolean USBSabertoothSerial::reply_available( byte *type, byte *number, USBSaber
         int16_t value = (uint16_t)data[4] << 0 | (uint16_t)data[5] << 7;
         *result = ((data[2] & 1) ? -value : value );
       } 
-      else *result = *context = SABERTOOTH_GET_ERROR; 
+      else 
+      {
+        clearSerial();
+        *result = *context = SABERTOOTH_GET_ERROR;
+      }
     }
 
     // we got a packet processed, stop the timeout timer, reset the receiver and return true

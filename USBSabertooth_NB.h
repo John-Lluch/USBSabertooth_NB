@@ -254,6 +254,7 @@ private:
   int     get      (byte address, boolean useCrc, byte type, byte number, USBSabertoothGetType getType, boolean unescaled);
   boolean async_get(byte address, boolean useCrc, byte type, byte number, USBSabertoothGetType getType, int context, boolean unescaled);
   boolean tryReceivePacket();
+  void    clearSerial();
 
 private:
   USBSabertoothSerial(USBSabertoothSerial& serial); // no copy
