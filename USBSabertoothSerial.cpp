@@ -25,12 +25,10 @@ USBSabertoothSerial::USBSabertoothSerial(Stream& port)
   _poll.expire();
 }
 
-
 void USBSabertoothSerial::clearSerial()
 {
   while( !( _port.read() < 0) );
 }
-
 
 boolean USBSabertoothSerial::tryReceivePacket()
 {  
@@ -97,76 +95,6 @@ boolean USBSabertoothSerial::async_get(byte address, boolean useCrc, byte type, 
   return true;
 }
 
-/*
-boolean USBSabertoothSerial::reply_available( byte *type, byte *number, USBSabertoothGetType *getType, int *result, int *context)
-{
-  const byte* commandData = _request.commandData;
-
-  // always retrieve get command data including the context so it is available to the user
-  *getType = (USBSabertoothGetType)(commandData[0] & ~3) ;
-  *type = commandData[1];
-  *number = commandData[2];
-  *context = _request.context;
-
-  // it might be now the time to send a pending command, so do it now and return
-  if ( !_request.waiting() && _poll.expired() )
-  {
-      _poll.reset();
-      _request.reset();
-       write( _request.address, SABERTOOTH_CMD_GET, _request.crc, commandData, SABERTOOTH_GETCOMMAND_DATA_LENGTH );    
-      return false;
-  }
-
-  // if we were not waiting for a response we return false
-  if ( !_request.waiting() ) return false;
- 
-  // handle timeout
-  if ( _request.expired() ) 
-  {
-    *result = *context = SABERTOOTH_GET_TIMED_OUT;
-  }
-  else
-  {
-    // check for reply packets ready to use, return false if not yet available
-    if ( !tryReceivePacket() ) return false;
-
-    // at this point we have a reply packet waiting for processing
-    // check consistency between sent and received packet
-    const USBSabertoothReplyCode replyCode = SABERTOOTH_RC_GET;
-    const byte* data = _receiver.data();
-
-    bool c0 = ( _receiver.address () == _request.address &&
-                _receiver.command () == replyCode &&
-                _receiver.usingCRC() == _request.crc );
-              
-    c0 = c0 && ( commandData[0]  == (data[2] & ~1) &&
-                 commandData[1]  ==  data[6] &&
-                 commandData[2]  ==  data[7] );
-
-    // parse result or return error
-    if ( c0 ) 
-    {
-      int16_t value = (uint16_t)data[4] << 0 | (uint16_t)data[5] << 7;
-      *result = ((data[2] & 1) ? -value : value );
-    } 
-    else *result = *context = SABERTOOTH_GET_ERROR; 
-  }
-
-  // we got a packet processed, stop the timeout timer, reset the receiver and return true
-  _request.expire();
-  _receiver.reset();
-  return true;
-}
-
-*/
-
-
-
-
-
-
-
-
 boolean USBSabertoothSerial::reply_available( byte *type, byte *number, USBSabertoothGetType *getType, int *result, int *context)
 {
   const byte* commandData = _request.commandData;
@@ -223,7 +151,7 @@ boolean USBSabertoothSerial::reply_available( byte *type, byte *number, USBSaber
     return true;
   }
   
-  // there was a pending request, it might be now the time to send it, so do it now if necessary
+  // there's not a pending request, it might be now the time to send the current one according to the poll interval
   if ( _poll.expired() )
   {
     _poll.reset();
@@ -234,10 +162,6 @@ boolean USBSabertoothSerial::reply_available( byte *type, byte *number, USBSaber
   // we did not process a request this time, so return false
   return false;
 }
-
-
-
-
 
 boolean USBSabertoothSerial::reply_available( byte *type, byte *number, int *result, int *context )
 {
