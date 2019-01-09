@@ -56,7 +56,8 @@ int USBSabertoothSerial::get(byte address, boolean useCrc, byte type, byte numbe
   _poll.expire();  // make sure the command is sent as soon as possible 
 
   if ( !async_get( address, useCrc, type, number, getType, 0, unscaled ) )
-    return SABERTOOTH_GET_BUSY;   // will return immediatelly if get command is in progress, this may happen when improperly mixing asynchronous and synchronous calls 
+    return SABERTOOTH_GET_BUSY;   // return immediatelly if get command is in progress, 
+                                  // this may happen when improperly mixing asynchronous and synchronous calls 
 
   int result, context;
   while ( !reply_available( &result, &context ) ) { }    // wait until the reply comes
