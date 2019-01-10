@@ -251,6 +251,7 @@ public:
 
 private:
   void    write    (byte address, USBSabertoothCommand command, boolean useCRC, const byte* data, size_t lengthOfData);
+  void    set      (byte address, boolean useCrc, byte type, byte number, int value, USBSabertoothSetType setType);
   int     get      (byte address, boolean useCrc, byte type, byte number, USBSabertoothGetType getType, boolean unescaled);
   boolean async_get(byte address, boolean useCrc, byte type, byte number, USBSabertoothGetType getType, int context, boolean unescaled);
   boolean tryReceivePacket();

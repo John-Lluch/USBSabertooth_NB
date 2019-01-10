@@ -50,6 +50,24 @@ void USBSabertoothSerial::write( byte address, USBSabertoothCommand command, boo
   _port.write(buffer, lengthOfBuffer);
 }
 
+void USBSabertoothSerial::set(byte address, boolean useCrc, byte type, byte number, 
+                    int value, USBSabertoothSetType setType)
+{
+  byte flags = (byte)setType;
+  if (value < -SABERTOOTH_MAX_VALUE) { value = -SABERTOOTH_MAX_VALUE; }
+  if (value >  SABERTOOTH_MAX_VALUE) { value =  SABERTOOTH_MAX_VALUE; }
+  if (value <                     0) { value = -value;   flags |=  1; }
+  
+  byte commandData[5];
+  commandData[0] = flags;
+  commandData[1] = (byte)((uint16_t)value >> 0) & 0x7f;
+  commandData[2] = (byte)((uint16_t)value >> 7) & 0x7f;
+  commandData[3] = type;
+  commandData[4] = number;
+  
+  write( address, SABERTOOTH_CMD_SET, useCrc, commandData, sizeof(commandData)); 
+}
+
 int USBSabertoothSerial::get(byte address, boolean useCrc, byte type, byte number,
                        USBSabertoothGetType getType, boolean unscaled)
 {  

@@ -107,19 +107,7 @@ void USBSabertooth::set(byte type, byte number, int value)
 void USBSabertooth::set(byte type, byte number, int value,
                          USBSabertoothSetType setType)
 {
-  byte flags = (byte)setType;
-  if (value < -SABERTOOTH_MAX_VALUE) { value = -SABERTOOTH_MAX_VALUE; }
-  if (value >  SABERTOOTH_MAX_VALUE) { value =  SABERTOOTH_MAX_VALUE; }
-  if (value <                     0) { value = -value;   flags |=  1; }
-  
-  byte commandData[5];
-  commandData[0] = flags;
-  commandData[1] = (byte)((uint16_t)value >> 0) & 0x7f;
-  commandData[2] = (byte)((uint16_t)value >> 7) & 0x7f;
-  commandData[3] = type;
-  commandData[4] = number;
-  
-  _serial.write( _address, SABERTOOTH_CMD_SET, _crc, commandData, sizeof(commandData)); 
+  _serial.set( _address, _crc, type, number, value, setType); 
 }
 
 int USBSabertooth::get(byte type, byte number,
