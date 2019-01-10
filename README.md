@@ -12,20 +12,17 @@ The USBSabertooth_NB library enable you to perform non-blocking write and reads 
 
 # Version history
 
-##### v 1.0.0   
 
+**v 1.0.0 :**
 Initial commit
 
-##### v 1.1.0   
-
+**v 1.1.0 :**
 Minor bug fixes
 
-##### v 1.1.1   
-
+**v 1.1.1 :**
 Improved error handling and recovery
 
-##### v 1.1.2   
-
+**v 1.1.2 :**
 Code refactoring: all communications code is now moved to the USBSabertoothSerial class, the USBSabertooth class now remains a container for Sabertooth settings and bridges all communications to the USBSaberToothSerial instance.
 
 # How it works
