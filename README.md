@@ -1,6 +1,6 @@
 # USBSabertooth_NB
 
-An Arduino NON BLOCKING driver for Dimmension Engineering Sabertooth motor controllers.
+An Arduino NON BLOCKING library for Dimmension Engineering Sabertooth motor controllers.
 
 # Motivation
 
@@ -9,6 +9,13 @@ The original library supplied by Dimmension Engineering BLOCKS program execution
 # Features
 
 The USBSabertooth_NB library enable you to perform non-blocking write and reads to and from Sabertooth motor controllers. The library uses a similar approach to Serial non-blocking communications. The library is based on and very similar to the original one, with the addition of several class member functions for non-blocking communications.
+
+# Version history
+
+- v 1.0.0   Initial commit
+- v 1.1.0   Minor bug fixes
+- v 1.1.1   Improved error handling and recovery
+- v 1.1.2   Code refactoring: all communications code is now moved to the USBSabertoothSerial class, the USBSabertooth class is now just a container for Sabertooth settings and fully bridges to USBSaberToothSerial 
 
 # How it works
 
