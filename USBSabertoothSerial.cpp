@@ -16,6 +16,10 @@ NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE
 USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
+/*
+Updated by John Lluch
+*/
+
 #include "USBSabertooth_NB.h"
 
 USBSabertoothSerial::USBSabertoothSerial(Stream& port)
